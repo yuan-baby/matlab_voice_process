@@ -1,2 +1,88 @@
-# matlab_voice_process
-A voice processing system made with MATLAB
+# 基于MATLAB的语音信号处理系统
+
+## 项目目的
+
+基于MATLAB的APP-designer，实现一个有图形化界面的语音信号处理系统，以实现对语音的变速不变调和变调不变速处理，并进行基础的降噪处理。
+
+## 系统界面
+
+<img src="https://s2.loli.net/2023/05/26/fktrwFPAX6l1MuQ.png" alt="image-20230526130807885" style="zoom: 67%;" />
+
+在项目文件夹中点击`vocal_signal_process.mlapp`，即可打开语音信号处理系统。
+
+点击`vocal_signal_process_exported.m`，即可查看从APP-designer中导出的项目源代码。
+
+<img src="https://s2.loli.net/2023/05/26/nR59CbqihSIsp7L.png" alt="image-20230526130535517" style="zoom: 50%;" />
+
+<center><font size="2" color="grey">语音信号处理系统界面</font></center>
+
+## 系统功能及原理
+
+### 录音和退出
+
+在录音部分，系统设计了`开始`、`结束`、`暂停`和`继续录制`四个按钮，点击`开始`即可开始录制音频，点击`暂停`会暂停录制，点击`继续录制`会接着暂停之前继续录制，点击`结束`则完成了音频的录制。点击结束后，在`原信号时域图`和`原信号频域图`的窗口处会显示相应的图像。满足了获取语音信号的基本需求。点击黄色的`退出`按钮即可退出系统。
+
+### 变速不变调
+
+**功能介绍**
+
+在语音信号的变速不变调处理部分，通过修改`速度`中的数值（大于0），即可将语音信号的播放速度修改为原来的相应倍数。点击`播放变速音频`后，会将变速不变调处理后的语音信号播放出来，并在`变速信号时域图`和`变速信号频域图`处显示相应的图像。
+
+**原理介绍**
+
+这一部分使用了MATLAB的`strechAudio`函数来实现变速不变调的功能。
+
+`stretchAudio` 可以对输入的音频进行时间尺度修改（TSM）。该函数的语法为 `audioOut = stretchAudio(audioIn,alpha)`，其中 `alpha` 是TSM因子，即变速的倍数。可以使用 `stretchAudio` 函数将原始音频信号加速 1.5 倍，或者将其减速 0.75 倍。样本率保持不变，但信号的持续时间会相应地减少或增加。
+
+时间尺度修改（TSM）的基本原理是将一段音频信号等分成不同的帧，然后对每个帧进行一系列处理，比如拉伸或压缩，最后再将这些帧重新叠加成合成信号。这个过程中，每个帧都会经过加窗处理，以减少波形不连续造成的影响。`stretchAudio`中使用Driedger, Johnathan提出的时间尺度修改算法 [^1] [^2]，包括的算法如下：
+
+- ==相位声码器算法==是一种基于频域的 TSM 方法 。相位声码器算法的基本步骤如下：
+  1. 算法在间隔 η 处对时域信号进行窗口化，其中 η = numel(Window) - OverlapLength。然后将窗口转换为频域。
+  2. 为了保持水平（跨时间）相位一致性，算法将每个 bin 视为独立的正弦波，其相位通过累积其瞬时频率的估计值来计算。
+  3. 为了保持垂直（跨单个频谱）相位一致性，算法将 bin 组的相位提前锁定到局部峰值的相位提前。仅当 LockPhase 设置为 true 时才应用此步骤。
+  4. 算法将修改后的频谱图返回到时域，窗口间隔为 δ，其中 δ ≈ η/α。α 是由 alpha 输入参数指定的加速因子。
+
+<img src="https://s2.loli.net/2023/05/26/LmJ29StEsD8uHBG.png" alt="image-20230526150334881" style="zoom: 67%;" />
+
+- ==WSOLA 算法==是一种基于时域的 TSM 方法 。WSOLA 是重叠和添加（OLA）算法的扩展。在 OLA 算法中，时域信号在间隔 η 处进行窗口化，其中 η = numel(Window) - OverlapLength。为了构造时间尺度修改后的输出音频，窗口间隔为 δ，其中 δ ≈ η/α。α 是由 alpha 输入参数指定的 TSM 因子。OLA 算法在重建幅度谱方面做得很好，但可能在窗口之间引入相位跳跃。WSOLA 算法试图通过在 η 间隔周围搜索 WSOLADelta 个样本来平滑相位跳跃，以找到最小化相位跳跃的窗口。该算法迭代地搜索最佳窗口，以便每个后续窗口都相对于先前选择的窗口进行选择。
+
+<img src="https://s2.loli.net/2023/05/26/fHMbNBjRDdOtvcw.png" alt="image-20230526150433640" style="zoom:67%;" />
+
+<img src="https://s2.loli.net/2023/05/26/tRPvA2qUIh4fjmx.png" alt="image-20230526150521913" style="zoom:67%;" />
+
+### 变调不变速
+
+**功能介绍**
+
+在语音信号的变速不变调处理部分，通过修改`音调`中的数值，即可将语音信号的播放速度修改为原来的相应倍数。点击`播放变速音频`后，会将变速不变调处理后的语音信号播放出来，并在`变调信号时域图`和`变调信号频域图`处显示相应的图像。
+
+**原理介绍**
+
+这一部分使用了MATLAB的`shiftPitch`函数来实现变速不变调的功能。
+
+`shiftPitch` 可以用来改变音频的音调。可以通过指定半音数量 `nsemitones` 来调用 `audioOut = shiftPitch(audioIn,nsemitones)` 函数，从而将音频输入的音调提高或降低指定数量的半音。
+
+为了实现音高移位，`shiftPitch` 函数使用==相位声码器==修改音频的时间尺度，然后对修改后的音频进行重采样。时间尺度修改算法按照 `stretchAudio` 中的实现方式实现。
+
+在时间尺度修改之后，`shiftPitch` 使用等于分析跳跃长度的插值因子和等于合成跳跃长度的抽取因子执行采样率转换。重采样阶段的插值和抽取因子如下选择：分析跳跃长度确定为`analysisHopLength = numel(Window)-OverlapLength`。`shiftPitch` 函数假定一个八度音阶中有 12 个半音，因此用于拉伸音频的加速因子为 `speedupFactor = 2^(-nsemitones/12)`。加速因子和分析跳跃长度确定时间尺度修改的合成跳跃长度为 `synthesisHopLength = round((1/SpeedupFactor)*analysisHopLength)`。
+
+## 降噪
+
+**功能介绍**
+
+在语音信号的降噪部分，由于一般条件下录制的音频噪声较小，同时谱减法又难以消除较复杂的噪声（杂乱人声等），因此添加了`加噪`按钮，以创建音频的加噪信号，便于降噪的效果演示。点击`播放加噪音频`，会播放加噪后的语音信号，并在`加噪信号时域图`和`加噪信号频域图`处显示相应的图像。在降噪部分，本系统提供了==谱减法==和==低通滤波==两种方法来尝试降噪，选择点击`谱减法`或`低通滤波`即可使用。点击`播放降噪音频`，会播放降噪后的语音信号，并在`降噪信号时域图`和`降噪信号频域图`处显示相应的图像。
+
+**原理介绍**
+
+- 加噪：这里加入了正态分布的随机噪声和频率为 440 Hz 的正弦噪声，并限定信噪比为 20 。这种方法得到的加噪信号带有听感上带有沙沙声（随机噪声）和一个较尖锐单调的声音（正弦噪声）。
+- 谱减法降噪：将前 1 秒的信号作为估计的噪声，对加噪语音进行FFT（快速傅里叶变换），并取带噪语音的相位作为最终相位，对噪声进行FFT。减去噪声后恢复出来原语音信号幅度，将小于 0 的部分置为 0 并且信号的实部，最终恢复语音信号。
+- 低通滤波降噪：因为电子设备产生的噪声往往是高频噪声，故这里设计了一个简单的 6 阶低通 Butterworth 滤波器来过滤掉高频噪声。
+
+## 参考文献
+
+[^1]: Driedger, Johnathan, and Meinard Müller. "A Review of Time-Scale Modification of Music Signals." *Applied Sciences*. Vol. 6, Issue 2, 2016.
+[^2]: Driedger, Johnathan. "Time-Scale Modification Algorithms for Music Audio Signals." Master's Thesis. Saarland University, Saarbrücken, Germany, 2011.
+
+
+
+
