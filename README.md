@@ -6,8 +6,6 @@
 
 ## 系统界面
 
-<img src="https://s2.loli.net/2023/05/26/fktrwFPAX6l1MuQ.png" alt="image-20230526130807885" style="zoom: 67%;" />
-
 在项目文件夹中点击`vocal_signal_process.mlapp`，即可打开语音信号处理系统。
 
 点击`vocal_signal_process_exported.m`，即可查看从APP-designer中导出的项目源代码。
